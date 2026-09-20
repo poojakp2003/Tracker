@@ -1,5 +1,4 @@
-"""Tests for Phase 2: Core Data Model & Tracking POST APIs."""
-
+from collections.abc import Generator
 from datetime import datetime, timezone
 import uuid
 import pytest
@@ -11,12 +10,15 @@ from app.models.user import User
 
 
 @pytest.fixture(scope="module")
-def client():
-    return TestClient(app)
+def client() -> Generator[TestClient, None, None]:
+    """Provide a TestClient instance for API tests."""
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 @pytest.fixture(scope="module")
-def auth_headers(client):
+def auth_headers(client: TestClient) -> Generator[dict[str, str], None, None]:
+    """Create a temporary test user and yield Authorization headers."""
     test_email = f"test_{uuid.uuid4().hex[:8]}@example.com"
     test_password = "SecurePassword123!"
 
@@ -40,7 +42,7 @@ def auth_headers(client):
             db.commit()
 
 
-def test_unauthorized_tracking_rejected(client):
+def test_unauthorized_tracking_rejected(client: TestClient) -> None:
     """Ensure unauthorized requests cannot post tracking data."""
     res_app = client.post("/track/app-usage", json={
         "app_name": "Chrome",
@@ -56,7 +58,7 @@ def test_unauthorized_tracking_rejected(client):
     assert res_browser.status_code == 401
 
 
-def test_track_app_usage(client, auth_headers):
+def test_track_app_usage(client: TestClient, auth_headers: dict[str, str]) -> None:
     """Test POST /track/app-usage with automatic duration computation."""
     start_time = datetime(2026, 9, 18, 10, 0, 0, tzinfo=timezone.utc)
     end_time = datetime(2026, 9, 18, 10, 30, 0, tzinfo=timezone.utc)
@@ -75,7 +77,7 @@ def test_track_app_usage(client, auth_headers):
     assert data["duration_seconds"] == 1800  # 30 mins
 
 
-def test_track_browser_activity(client, auth_headers):
+def test_track_browser_activity(client: TestClient, auth_headers: dict[str, str]) -> None:
     """Test POST /track/browser-activity from Chrome extension."""
     payload = {
         "browser": "Chrome",
@@ -91,7 +93,7 @@ def test_track_browser_activity(client, auth_headers):
     assert data["title"] == "GitHub"
 
 
-def test_permissions_flow_and_gating(client, auth_headers):
+def test_permissions_flow_and_gating(client: TestClient, auth_headers: dict[str, str]) -> None:
     """Test default permissions, toggling, and enforcement on tracking."""
     # 1. Fetch default permissions
     res_perm = client.get("/track/permissions", headers=auth_headers)

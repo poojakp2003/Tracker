@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 
 
 class YouTubeActivity(Base):
+    """SQLAlchemy model representing watched YouTube videos and watch duration."""
+
     __tablename__ = "youtube_activity"
 
     id: Mapped[int] = mapped_column(primary_key=True)

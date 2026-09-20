@@ -4,20 +4,18 @@ import sys
 
 from sqlalchemy import text
 
-from app.core.database import get_db
+from app.core.database import SessionLocal
 from app.main import app
 
 
 def main() -> None:
+    """Validate database connection and print current database name."""
     sys.stdout.reconfigure(encoding="utf-8")
     assert app.title == "Tracker API"
 
-    db = next(get_db())
-    try:
+    with SessionLocal() as db:
         value = db.execute(text("SELECT 1")).scalar()
         database = db.execute(text("SELECT current_database()")).scalar()
-    finally:
-        db.close()
 
     if value != 1:
         raise SystemExit(f"Unexpected SELECT 1 result: {value}")

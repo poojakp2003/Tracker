@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 
 
 class Permission(Base):
+    """SQLAlchemy model representing tracking permissions per user."""
+
     __tablename__ = "permissions"
 
     id: Mapped[int] = mapped_column(primary_key=True)

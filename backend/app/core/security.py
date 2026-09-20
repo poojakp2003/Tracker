@@ -13,10 +13,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 
 def hash_password(password: str) -> str:
+    """Hash a plaintext password using the recommended password hasher."""
     return password_hash.hash(password)
 
 
 def verify_password(password: str, hashed_password: str) -> bool:
+    """Verify a plaintext password against a stored password hash."""
     try:
         return password_hash.verify(password, hashed_password)
     except UnknownHashError:
@@ -24,6 +26,7 @@ def verify_password(password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(subject: str, expires_delta: timedelta | None = None) -> str:
+    """Create an HMAC-SHA256 signed JWT token for a given subject."""
     expire = datetime.now(timezone.utc) + (
         expires_delta
         if expires_delta is not None
@@ -34,8 +37,10 @@ def create_access_token(subject: str, expires_delta: timedelta | None = None) ->
 
 
 def decode_access_token(token: str) -> str:
+    """Decode and validate a JWT token, returning the subject claim."""
     payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
     subject = payload.get("sub")
     if subject is None:
         raise jwt.InvalidTokenError("Token missing subject")
     return str(subject)
+

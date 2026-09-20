@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 
 
 class AppUsage(Base):
+    """SQLAlchemy model representing tracked application sessions and duration."""
+
     __tablename__ = "app_usage"
 
     id: Mapped[int] = mapped_column(primary_key=True)

@@ -23,6 +23,7 @@ def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User:
+    """Validate JWT bearer token from request header and resolve user from database."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -45,6 +46,7 @@ def get_current_user(
     status_code=status.HTTP_201_CREATED,
 )
 def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> User:
+    """Register a new user account with unique email and hashed password."""
     email = str(payload.email).lower()
     existing = db.scalar(select(User).where(User.email == email))
     if existing is not None:
@@ -69,6 +71,7 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> User:
 
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    """Authenticate user credentials and issue a signed JWT access token."""
     email = str(payload.email).lower()
     user = db.scalar(select(User).where(User.email == email))
     if user is None or not verify_password(payload.password, user.password_hash):
@@ -82,6 +85,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
 
 @router.get("/me", response_model=UserResponse)
 def read_me(current_user: User = Depends(get_current_user)) -> User:
+    """Retrieve profile information for currently authenticated user."""
     return current_user
 
 
@@ -90,5 +94,7 @@ def read_me(current_user: User = Depends(get_current_user)) -> User:
 # (e.g. refresh tokens or forced session invalidation).
 @router.post("/logout", status_code=status.HTTP_200_OK)
 def logout(current_user: User = Depends(get_current_user)) -> dict[str, str]:
+    """Stateless logout acknowledgment endpoint."""
     return {"message": "Logged out successfully"}
+
 

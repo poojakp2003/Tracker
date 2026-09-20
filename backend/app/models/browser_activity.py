@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 
 
 class BrowserActivity(Base):
+    """SQLAlchemy model representing visited websites and URLs."""
+
     __tablename__ = "browser_activity"
 
     id: Mapped[int] = mapped_column(primary_key=True)

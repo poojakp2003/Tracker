@@ -13,6 +13,7 @@ from app.models.youtube_activity import YouTubeActivity
 
 
 def main() -> None:
+    """Execute end-to-end verification of Phase 3 dashboard endpoints and time range filtering."""
     sys.stdout.reconfigure(encoding="utf-8")
     print("=== Phase 3 Verification: Dashboard APIs & Date Range Filtering ===")
 

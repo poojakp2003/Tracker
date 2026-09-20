@@ -1,6 +1,6 @@
-"""Tests for Phase 3: Dashboard APIs and Date Range Filtering."""
-
+from collections.abc import Generator
 from datetime import datetime, timedelta, timezone
+from typing import Any
 import uuid
 import pytest
 from fastapi.testclient import TestClient
@@ -14,12 +14,15 @@ from app.models.youtube_activity import YouTubeActivity
 
 
 @pytest.fixture(scope="module")
-def client():
-    return TestClient(app)
+def client() -> Generator[TestClient, None, None]:
+    """Provide a TestClient instance for API tests."""
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 @pytest.fixture(scope="module")
-def test_user_and_headers(client):
+def test_user_and_headers(client: TestClient) -> Generator[dict[str, Any], None, None]:
+    """Create a temporary test user, populate activity metrics, and yield user metadata."""
     test_email = f"dash_test_{uuid.uuid4().hex[:8]}@example.com"
     test_password = "DashboardPassword123!"
 
@@ -123,7 +126,7 @@ def test_user_and_headers(client):
             db.commit()
 
 
-def test_unauthorized_dashboard_access(client):
+def test_unauthorized_dashboard_access(client: TestClient) -> None:
     """Ensure all dashboard endpoints reject unauthenticated requests with 401."""
     assert client.get("/dashboard/summary").status_code == 401
     assert client.get("/dashboard/apps").status_code == 401
@@ -131,7 +134,7 @@ def test_unauthorized_dashboard_access(client):
     assert client.get("/dashboard/youtube").status_code == 401
 
 
-def test_dashboard_summary(client, test_user_and_headers):
+def test_dashboard_summary(client: TestClient, test_user_and_headers: dict[str, Any]) -> None:
     """Test /dashboard/summary aggregate metrics."""
     headers = test_user_and_headers["headers"]
     res = client.get("/dashboard/summary", headers=headers)
@@ -150,7 +153,7 @@ def test_dashboard_summary(client, test_user_and_headers):
     assert data["total_videos_watched"] == 3
 
 
-def test_dashboard_apps_with_range_filters(client, test_user_and_headers):
+def test_dashboard_apps_with_range_filters(client: TestClient, test_user_and_headers: dict[str, Any]) -> None:
     """Test /dashboard/apps with 7d and 30d range filtering."""
     headers = test_user_and_headers["headers"]
 
@@ -180,7 +183,7 @@ def test_dashboard_apps_with_range_filters(client, test_user_and_headers):
     assert res_invalid.status_code == 400
 
 
-def test_dashboard_browser(client, test_user_and_headers):
+def test_dashboard_browser(client: TestClient, test_user_and_headers: dict[str, Any]) -> None:
     """Test /dashboard/browser domain extraction and grouping."""
     headers = test_user_and_headers["headers"]
     res = client.get("/dashboard/browser?range=7d", headers=headers)
@@ -194,7 +197,7 @@ def test_dashboard_browser(client, test_user_and_headers):
     assert "github.com" in domains
 
 
-def test_dashboard_youtube(client, test_user_and_headers):
+def test_dashboard_youtube(client: TestClient, test_user_and_headers: dict[str, Any]) -> None:
     """Test /dashboard/youtube ranking by watched time."""
     headers = test_user_and_headers["headers"]
     res = client.get("/dashboard/youtube?range=7d", headers=headers)
@@ -210,7 +213,7 @@ def test_dashboard_youtube(client, test_user_and_headers):
     assert data["items"][2]["watched_seconds"] == 1200
 
 
-def test_user_isolation(client):
+def test_user_isolation(client: TestClient) -> None:
     """Ensure a different user only sees their own dashboard statistics."""
     other_email = f"other_{uuid.uuid4().hex[:8]}@example.com"
     client.post("/auth/signup", json={"email": other_email, "password": "Password123!"})

@@ -17,6 +17,8 @@ def format_duration(seconds: int) -> str:
 
 
 class DashboardSummaryResponse(BaseModel):
+    """Schema for top-level usage summary metrics across periods."""
+
     today_seconds: int
     today_formatted: str
     week_seconds: int
@@ -29,6 +31,8 @@ class DashboardSummaryResponse(BaseModel):
 
 
 class AppUsageItem(BaseModel):
+    """Schema representing aggregated usage for a specific application."""
+
     app_name: str
     duration_seconds: int
     duration_formatted: str
@@ -37,6 +41,8 @@ class AppUsageItem(BaseModel):
 
 
 class DashboardAppsResponse(BaseModel):
+    """Schema for returning aggregated app usage analytics."""
+
     range: str
     total_duration_seconds: int
     total_duration_formatted: str
@@ -44,6 +50,8 @@ class DashboardAppsResponse(BaseModel):
 
 
 class BrowserDomainItem(BaseModel):
+    """Schema representing aggregated visits for a specific domain."""
+
     domain: str
     visit_count: int
     last_visited: datetime
@@ -51,12 +59,16 @@ class BrowserDomainItem(BaseModel):
 
 
 class DashboardBrowserResponse(BaseModel):
+    """Schema for returning domain-aggregated browser analytics."""
+
     range: str
     total_visits: int
     items: list[BrowserDomainItem]
 
 
 class YouTubeItem(BaseModel):
+    """Schema representing aggregated watching stats for a YouTube video."""
+
     video_id: str
     video_title: str
     url: str
@@ -67,7 +79,51 @@ class YouTubeItem(BaseModel):
 
 
 class DashboardYouTubeResponse(BaseModel):
+    """Schema for returning aggregated YouTube analytics."""
+
     range: str
     total_watched_seconds: int
     total_watched_formatted: str
     items: list[YouTubeItem]
+
+
+class TimelinePoint(BaseModel):
+    """Schema representing a single day's activity on the timeline."""
+
+    date: str
+    day: str
+    hours: float
+    duration_seconds: int
+    duration_formatted: str
+    session_count: int
+
+
+class DashboardTimelineResponse(BaseModel):
+    """Schema for returning multi-day timeline activity trends."""
+
+    range: str
+    total_hours: float
+    total_duration_formatted: str
+    items: list[TimelinePoint]
+
+
+class BrowserHistoryItem(BaseModel):
+    """Schema representing an individual browser history event."""
+
+    id: int
+    url: str
+    domain: str
+    title: str | None = None
+    browser: str
+    timestamp: datetime
+    time_formatted: str
+
+
+class DashboardBrowserHistoryResponse(BaseModel):
+    """Schema for returning a paginated or filtered list of browser visits."""
+
+    range: str
+    total_count: int
+    items: list[BrowserHistoryItem]
+
+

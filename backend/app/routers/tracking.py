@@ -49,6 +49,7 @@ def track_app_usage(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AppUsage:
+    """Record application usage session if app tracking permission is enabled."""
     permission = get_or_create_user_permission(db, current_user.id)
     if not permission.app_tracking:
         raise HTTPException(
@@ -80,6 +81,7 @@ def track_browser_activity(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> BrowserActivity:
+    """Record browser activity if browser tracking permission is enabled."""
     permission = get_or_create_user_permission(db, current_user.id)
     if not permission.browser_tracking:
         raise HTTPException(
@@ -110,6 +112,7 @@ def track_youtube_activity(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> YouTubeActivity:
+    """Record YouTube viewing activity if YouTube tracking permission is enabled."""
     permission = get_or_create_user_permission(db, current_user.id)
     if not permission.youtube_tracking:
         raise HTTPException(
@@ -140,6 +143,7 @@ def get_permissions(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Permission:
+    """Retrieve tracking permission flags for the current user."""
     return get_or_create_user_permission(db, current_user.id)
 
 
@@ -153,6 +157,7 @@ def update_permissions(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Permission:
+    """Update tracking permission flags for the current user."""
     perm = get_or_create_user_permission(db, current_user.id)
 
     if payload.app_tracking is not None:
@@ -165,3 +170,4 @@ def update_permissions(
     db.commit()
     db.refresh(perm)
     return perm
+

@@ -17,7 +17,8 @@ from app.models.app_usage import AppUsage
 from app.models.user import User
 
 
-def run_test():
+def run_test() -> None:
+    """Test GET /dashboard/apps?range=7d with simulated application usage records."""
     sys.stdout.reconfigure(encoding="utf-8")
     print("=" * 60)
     print("Testing GET /dashboard/apps?range=7d with Fake Data")

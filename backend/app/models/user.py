@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 
 class User(Base):
+    """SQLAlchemy model representing an application user."""
+
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -29,16 +31,17 @@ class User(Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
-    app_usages: Mapped[List["AppUsage"]] = relationship(
+    app_usages: Mapped[list["AppUsage"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    browser_activities: Mapped[List["BrowserActivity"]] = relationship(
+    browser_activities: Mapped[list["BrowserActivity"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    youtube_activities: Mapped[List["YouTubeActivity"]] = relationship(
+    youtube_activities: Mapped[list["YouTubeActivity"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )
+
 

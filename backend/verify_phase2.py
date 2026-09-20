@@ -13,6 +13,7 @@ from app.models.user import User
 
 
 def main() -> None:
+    """Execute end-to-end verification of Phase 2 tables, tracking, and permissions."""
     sys.stdout.reconfigure(encoding="utf-8")
     print("=== Phase 2 Verification ===")
 

@@ -15,10 +15,14 @@ from app.routers.auth import get_current_user
 from app.schemas.dashboard import (
     AppUsageItem,
     BrowserDomainItem,
+    BrowserHistoryItem,
     DashboardAppsResponse,
+    DashboardBrowserHistoryResponse,
     DashboardBrowserResponse,
     DashboardSummaryResponse,
+    DashboardTimelineResponse,
     DashboardYouTubeResponse,
+    TimelinePoint,
     YouTubeItem,
     format_duration,
 )
@@ -31,21 +35,22 @@ def get_range_cutoff(range_key: str) -> datetime | None:
     now = datetime.now(timezone.utc)
     key = range_key.lower().strip()
 
-    if key == "today":
-        return now.replace(hour=0, minute=0, second=0, microsecond=0)
-    elif key == "24h":
-        return now - timedelta(hours=24)
-    elif key == "7d":
-        return now - timedelta(days=7)
-    elif key == "30d":
-        return now - timedelta(days=30)
-    elif key == "all":
-        return None
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid range '{range_key}'. Allowed values: today, 24h, 7d, 30d, all",
-        )
+    match key:
+        case "today":
+            return now.replace(hour=0, minute=0, second=0, microsecond=0)
+        case "24h":
+            return now - timedelta(hours=24)
+        case "7d":
+            return now - timedelta(days=7)
+        case "30d":
+            return now - timedelta(days=30)
+        case "all":
+            return None
+        case _:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid range '{range_key}'. Allowed values: today, 24h, 7d, 30d, all",
+            )
 
 
 def extract_domain(url: str) -> str:
@@ -63,6 +68,7 @@ def extract_domain(url: str) -> str:
         return cleaned
 
 
+
 @router.get(
     "/summary",
     response_model=DashboardSummaryResponse,
@@ -72,6 +78,7 @@ def get_dashboard_summary(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DashboardSummaryResponse:
+    """Retrieve high-level dashboard metrics (today, 7d, 30d totals and counts)."""
     now = datetime.now(timezone.utc)
     start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
     seven_days_ago = now - timedelta(days=7)
@@ -139,6 +146,7 @@ def get_dashboard_apps(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DashboardAppsResponse:
+    """Retrieve application usage statistics grouped by app and ordered by duration."""
     cutoff = get_range_cutoff(range)
 
     query = (
@@ -191,6 +199,7 @@ def get_dashboard_browser(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DashboardBrowserResponse:
+    """Retrieve domain-aggregated browser activity and visit percentages."""
     cutoff = get_range_cutoff(range)
 
     query = select(BrowserActivity.url, BrowserActivity.timestamp).where(
@@ -244,6 +253,7 @@ def get_dashboard_youtube(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DashboardYouTubeResponse:
+    """Retrieve YouTube viewing activity grouped by video and sorted by watch duration."""
     cutoff = get_range_cutoff(range)
 
     query = (
@@ -292,3 +302,124 @@ def get_dashboard_youtube(
         total_watched_formatted=format_duration(total_watched),
         items=items,
     )
+
+
+@router.get(
+    "/timeline",
+    response_model=DashboardTimelineResponse,
+    status_code=status.HTTP_200_OK,
+)
+def get_dashboard_timeline(
+    time_range: str = Query(default="7d", alias="range", description="Time period (today, 24h, 7d, 30d, all)"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> DashboardTimelineResponse:
+    """Retrieve daily timeline points for charting application usage duration."""
+    cutoff = get_range_cutoff(time_range)
+    now = datetime.now(timezone.utc)
+
+    # Determine date span to display
+    key = time_range.lower().strip()
+    match key:
+        case "today" | "24h":
+            day_count = 1
+        case "30d":
+            day_count = 30
+        case "all":
+            day_count = 14
+        case _:  # default 7d
+            day_count = 7
+
+    target_dates = [now.date() - timedelta(days=i) for i in range(day_count - 1, -1, -1)]
+
+    # Fetch app usage records for user in range
+    query = select(AppUsage.start_time, AppUsage.duration_seconds).where(
+        AppUsage.user_id == current_user.id
+    )
+    if cutoff is not None:
+        query = query.where(AppUsage.start_time >= cutoff)
+
+    records = db.execute(query).all()
+
+    daily_seconds: dict[str, int] = defaultdict(int)
+    daily_sessions: dict[str, int] = defaultdict(int)
+
+    for rec in records:
+        d_str = rec.start_time.date().strftime("%Y-%m-%d")
+        daily_seconds[d_str] += rec.duration_seconds
+        daily_sessions[d_str] += 1
+
+    items: list[TimelinePoint] = []
+    total_sec = 0
+
+    for d in target_dates:
+        d_str = d.strftime("%Y-%m-%d")
+        dur = daily_seconds.get(d_str, 0)
+        total_sec += dur
+        hours = round(dur / 3600.0, 1)
+        items.append(
+            TimelinePoint(
+                date=d_str,
+                day=d.strftime("%A"),  # Monday, Tuesday, etc.
+                hours=hours,
+                duration_seconds=dur,
+                duration_formatted=format_duration(dur),
+                session_count=daily_sessions.get(d_str, 0),
+            )
+        )
+
+    return DashboardTimelineResponse(
+        range=time_range,
+        total_hours=round(total_sec / 3600.0, 1),
+        total_duration_formatted=format_duration(total_sec),
+        items=items,
+    )
+
+
+@router.get(
+    "/browser-history",
+    response_model=DashboardBrowserHistoryResponse,
+    status_code=status.HTTP_200_OK,
+)
+def get_dashboard_browser_history(
+    range: str = Query(default="7d", description="Time period (today, 24h, 7d, 30d, all)"),
+    limit: int = Query(default=50, ge=1, le=200, description="Max history records to return"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> DashboardBrowserHistoryResponse:
+    """Retrieve chronological list of individual browser history records."""
+    cutoff = get_range_cutoff(range)
+
+    query = (
+        select(BrowserActivity)
+        .where(BrowserActivity.user_id == current_user.id)
+        .order_by(desc(BrowserActivity.timestamp))
+    )
+
+    if cutoff is not None:
+        query = query.where(BrowserActivity.timestamp >= cutoff)
+
+    query = query.limit(limit)
+    rows = db.scalars(query).all()
+
+    items: list[BrowserHistoryItem] = []
+    for row in rows:
+        items.append(
+            BrowserHistoryItem(
+                id=row.id,
+                url=row.url,
+                domain=extract_domain(row.url),
+                title=row.title,
+                browser=row.browser,
+                timestamp=row.timestamp,
+                time_formatted=row.timestamp.strftime("%H:%M"),
+            )
+        )
+
+    return DashboardBrowserHistoryResponse(
+        range=range,
+        total_count=len(items),
+        items=items,
+    )
+
+
