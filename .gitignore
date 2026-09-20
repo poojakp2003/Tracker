@@ -41,3 +41,9 @@ yarn-debug.log*
 *.sqlite3
 *.db
 
+# Desktop Agent local buffer
+desktop-agent/.buffer.json
+*.buffer.json
+
+
+desktop-agent/config.json
