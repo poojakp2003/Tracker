@@ -41,21 +41,41 @@ def get_or_create_user_permission(db: Session, user_id: int) -> Permission:
 
 @router.post(
     "/app-usage",
-    response_model=AppUsageResponse,
+    response_model=AppUsageResponse | list[AppUsageResponse],
     status_code=status.HTTP_201_CREATED,
 )
 def track_app_usage(
-    payload: AppUsageCreate,
+    payload: AppUsageCreate | list[AppUsageCreate],
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> AppUsage:
-    """Record application usage session if app tracking permission is enabled."""
+) -> AppUsage | list[AppUsage]:
+    """Record application usage session(s) if app tracking permission is enabled."""
     permission = get_or_create_user_permission(db, current_user.id)
     if not permission.app_tracking:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="App tracking is disabled in user settings",
         )
+
+    if isinstance(payload, list):
+        if not payload:
+            return []
+        records = [
+            AppUsage(
+                user_id=current_user.id,
+                app_name=item.app_name,
+                window_title=item.window_title,
+                start_time=item.start_time,
+                end_time=item.end_time,
+                duration_seconds=item.duration_seconds,
+            )
+            for item in payload
+        ]
+        db.add_all(records)
+        db.commit()
+        for r in records:
+            db.refresh(r)
+        return records
 
     record = AppUsage(
         user_id=current_user.id,
@@ -69,6 +89,22 @@ def track_app_usage(
     db.commit()
     db.refresh(record)
     return record
+
+
+@router.post(
+    "/app-usage/batch",
+    response_model=list[AppUsageResponse],
+    status_code=status.HTTP_201_CREATED,
+)
+def track_app_usage_batch(
+    payload: list[AppUsageCreate],
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[AppUsage]:
+    """Record a batch of application usage sessions."""
+    result = track_app_usage(payload, current_user, db)
+    return result if isinstance(result, list) else [result]
+
 
 
 @router.post(

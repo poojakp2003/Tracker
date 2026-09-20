@@ -1,5 +1,5 @@
 from collections.abc import Generator
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import uuid
 import pytest
 from fastapi.testclient import TestClient
@@ -75,6 +75,34 @@ def test_track_app_usage(client: TestClient, auth_headers: dict[str, str]) -> No
     assert data["app_name"] == "Google Chrome"
     assert data["window_title"] == "GitHub - Repository"
     assert data["duration_seconds"] == 1800  # 30 mins
+
+
+def test_track_app_usage_batch(client: TestClient, auth_headers: dict[str, str]) -> None:
+    """Test POST /track/app-usage and /track/app-usage/batch with a list of records."""
+    start_time = datetime(2026, 9, 18, 11, 0, 0, tzinfo=timezone.utc)
+    batch_payload = [
+        {
+            "app_name": "VS Code",
+            "window_title": "agent.py - tracker",
+            "start_time": start_time.isoformat(),
+            "end_time": (start_time + timedelta(minutes=45)).isoformat(),
+        },
+        {
+            "app_name": "Google Chrome",
+            "window_title": "FastAPI Documentation",
+            "start_time": (start_time + timedelta(minutes=45)).isoformat(),
+            "end_time": (start_time + timedelta(minutes=70)).isoformat(),
+        },
+    ]
+    response = client.post("/track/app-usage", headers=auth_headers, json=batch_payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 2
+    assert data[0]["app_name"] == "VS Code"
+    assert data[0]["duration_seconds"] == 2700
+    assert data[1]["app_name"] == "Google Chrome"
+    assert data[1]["duration_seconds"] == 1500
 
 
 def test_track_browser_activity(client: TestClient, auth_headers: dict[str, str]) -> None:
