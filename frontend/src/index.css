@@ -313,3 +313,95 @@ a:hover {
   border-radius: var(--radius-sm);
   animation: pulse 1.5s infinite;
 }
+
+/* Custom Toggle Switch Styles for Settings */
+.tracking-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid transparent;
+  user-select: none;
+}
+
+.tracking-switch-btn.on {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34D399;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+}
+
+.tracking-switch-btn.on:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
+  transform: translateY(-1px);
+}
+
+.tracking-switch-btn.off {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+}
+
+.tracking-switch-btn.off:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-secondary);
+  transform: translateY(-1px);
+}
+
+.tracking-switch-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Indicator dot inside toggle */
+.tracking-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all 0.25s ease;
+}
+
+.tracking-dot.on {
+  background-color: #10B981;
+  box-shadow: 0 0 8px #10B981;
+}
+
+.tracking-dot.off {
+  background-color: #64748B;
+}
+
+/* Toast container */
+.toast-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: 22px;
+  animation: fadeIn 0.25s ease;
+  font-size: 0.88rem;
+}
+
+.toast-success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34D399;
+}
+
+.toast-error {
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  color: #FB7185;
+}
+

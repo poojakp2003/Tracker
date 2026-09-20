@@ -19,3 +19,14 @@ export const getDashboardYouTube = async (range = "7d") => {
   const response = await apiClient.get(`/dashboard/youtube?range=${range}`);
   return response.data;
 };
+
+export const getDashboardTimeline = async (range = "7d") => {
+  const response = await apiClient.get(`/dashboard/timeline?range=${range}`);
+  return response.data;
+};
+
+export const getDashboardBrowserHistory = async (range = "7d", limit = 50) => {
+  const response = await apiClient.get(`/dashboard/browser-history?range=${range}&limit=${limit}`);
+  return response.data;
+};
+
