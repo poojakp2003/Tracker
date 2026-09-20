@@ -1,0 +1,16 @@
+{
+  "backend_url": "http://127.0.0.1:8000",
+  "email": "",
+  "password": "",
+  "access_token": "",
+  "poll_interval_seconds": 1.0,
+  "min_duration_seconds": 1,
+  "batch_size": 5,
+  "flush_interval_seconds": 30,
+  "ignored_apps": [
+    "LockApp.exe",
+    "SearchHost.exe",
+    "ShellExperienceHost.exe",
+    "ScreenClippingHost.exe"
+  ]
+}
