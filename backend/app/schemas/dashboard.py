@@ -6,6 +6,8 @@ def format_duration(seconds: int) -> str:
     """Formats an integer duration in seconds into human-readable text."""
     if seconds <= 0:
         return "0 mins"
+    if seconds < 60:
+        return f"{seconds} sec" if seconds == 1 else f"{seconds} secs"
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
     parts: list[str] = []
@@ -14,7 +16,6 @@ def format_duration(seconds: int) -> str:
     if minutes > 0 or not parts:
         parts.append(f"{minutes} min" if minutes == 1 else f"{minutes} mins")
     return " ".join(parts)
-
 
 class DashboardSummaryResponse(BaseModel):
     """Schema for top-level usage summary metrics across periods."""

@@ -85,26 +85,52 @@ def get_dashboard_summary(
     thirty_days_ago = now - timedelta(days=30)
 
     # App usage durations
-    today_seconds = db.scalar(
+    today_app_seconds = db.scalar(
         select(func.coalesce(func.sum(AppUsage.duration_seconds), 0)).where(
             AppUsage.user_id == current_user.id,
             AppUsage.start_time >= start_of_today,
         )
     ) or 0
 
-    week_seconds = db.scalar(
+    week_app_seconds = db.scalar(
         select(func.coalesce(func.sum(AppUsage.duration_seconds), 0)).where(
             AppUsage.user_id == current_user.id,
             AppUsage.start_time >= seven_days_ago,
         )
     ) or 0
 
-    month_seconds = db.scalar(
+    month_app_seconds = db.scalar(
         select(func.coalesce(func.sum(AppUsage.duration_seconds), 0)).where(
             AppUsage.user_id == current_user.id,
             AppUsage.start_time >= thirty_days_ago,
         )
     ) or 0
+
+    # YouTube watch durations
+    today_yt_seconds = db.scalar(
+        select(func.coalesce(func.sum(YouTubeActivity.watched_time_seconds), 0)).where(
+            YouTubeActivity.user_id == current_user.id,
+            YouTubeActivity.timestamp >= start_of_today,
+        )
+    ) or 0
+
+    week_yt_seconds = db.scalar(
+        select(func.coalesce(func.sum(YouTubeActivity.watched_time_seconds), 0)).where(
+            YouTubeActivity.user_id == current_user.id,
+            YouTubeActivity.timestamp >= seven_days_ago,
+        )
+    ) or 0
+
+    month_yt_seconds = db.scalar(
+        select(func.coalesce(func.sum(YouTubeActivity.watched_time_seconds), 0)).where(
+            YouTubeActivity.user_id == current_user.id,
+            YouTubeActivity.timestamp >= thirty_days_ago,
+        )
+    ) or 0
+
+    today_seconds = today_app_seconds + today_yt_seconds
+    week_seconds = week_app_seconds + week_yt_seconds
+    month_seconds = month_app_seconds + month_yt_seconds
 
     # Activity counts
     total_app_sessions = db.scalar(
@@ -314,7 +340,7 @@ def get_dashboard_timeline(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DashboardTimelineResponse:
-    """Retrieve daily timeline points for charting application usage duration."""
+    """Retrieve daily timeline points for charting combined app + YouTube usage duration."""
     cutoff = get_range_cutoff(time_range)
     now = datetime.now(timezone.utc)
 
@@ -347,6 +373,20 @@ def get_dashboard_timeline(
     for rec in records:
         d_str = rec.start_time.date().strftime("%Y-%m-%d")
         daily_seconds[d_str] += rec.duration_seconds
+        daily_sessions[d_str] += 1
+
+    # Fetch YouTube watch records for user in range and merge into the same daily buckets
+    yt_query = select(YouTubeActivity.timestamp, YouTubeActivity.watched_time_seconds).where(
+        YouTubeActivity.user_id == current_user.id
+    )
+    if cutoff is not None:
+        yt_query = yt_query.where(YouTubeActivity.timestamp >= cutoff)
+
+    yt_records = db.execute(yt_query).all()
+
+    for rec in yt_records:
+        d_str = rec.timestamp.date().strftime("%Y-%m-%d")
+        daily_seconds[d_str] += rec.watched_time_seconds
         daily_sessions[d_str] += 1
 
     items: list[TimelinePoint] = []
@@ -421,5 +461,3 @@ def get_dashboard_browser_history(
         total_count=len(items),
         items=items,
     )
-
-

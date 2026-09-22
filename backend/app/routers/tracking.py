@@ -31,7 +31,7 @@ def get_or_create_user_permission(db: Session, user_id: int) -> Permission:
             user_id=user_id,
             app_tracking=True,
             browser_tracking=True,
-            youtube_tracking=False,
+            youtube_tracking=True,
         )
         db.add(perm)
         db.commit()
@@ -109,21 +109,40 @@ def track_app_usage_batch(
 
 @router.post(
     "/browser-activity",
-    response_model=BrowserActivityResponse,
+    response_model=BrowserActivityResponse | list[BrowserActivityResponse],
     status_code=status.HTTP_201_CREATED,
 )
 def track_browser_activity(
-    payload: BrowserActivityCreate,
+    payload: BrowserActivityCreate | list[BrowserActivityCreate],
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> BrowserActivity:
-    """Record browser activity if browser tracking permission is enabled."""
+) -> BrowserActivity | list[BrowserActivity]:
+    """Record browser activity session(s) if browser tracking permission is enabled."""
     permission = get_or_create_user_permission(db, current_user.id)
     if not permission.browser_tracking:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Browser tracking is disabled in user settings",
         )
+
+    if isinstance(payload, list):
+        if not payload:
+            return []
+        records = [
+            BrowserActivity(
+                user_id=current_user.id,
+                browser=item.browser,
+                url=item.url,
+                title=item.title,
+                timestamp=item.timestamp,
+            )
+            for item in payload
+        ]
+        db.add_all(records)
+        db.commit()
+        for r in records:
+            db.refresh(r)
+        return records
 
     record = BrowserActivity(
         user_id=current_user.id,
@@ -136,6 +155,21 @@ def track_browser_activity(
     db.commit()
     db.refresh(record)
     return record
+
+
+@router.post(
+    "/browser-activity/batch",
+    response_model=list[BrowserActivityResponse],
+    status_code=status.HTTP_201_CREATED,
+)
+def track_browser_activity_batch(
+    payload: list[BrowserActivityCreate],
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[BrowserActivity]:
+    """Record a batch of browser activity events."""
+    result = track_browser_activity(payload, current_user, db)
+    return result if isinstance(result, list) else [result]
 
 
 @router.post(

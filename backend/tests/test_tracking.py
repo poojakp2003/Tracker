@@ -121,6 +121,44 @@ def test_track_browser_activity(client: TestClient, auth_headers: dict[str, str]
     assert data["title"] == "GitHub"
 
 
+def test_track_browser_activity_batch(client: TestClient, auth_headers: dict[str, str]) -> None:
+    """Test POST /track/browser-activity with a batch list of browser visits."""
+    timestamp = datetime(2026, 9, 18, 11, 30, 0, tzinfo=timezone.utc).isoformat()
+    batch_payload = [
+        {
+            "browser": "Chrome",
+            "url": "https://google.com",
+            "title": "Google Search",
+            "timestamp": timestamp,
+        },
+        {
+            "browser": "Chrome",
+            "url": "https://youtube.com",
+            "title": "YouTube - Home",
+            "timestamp": timestamp,
+        },
+        {
+            "browser": "Chrome",
+            "url": "https://github.com",
+            "title": "GitHub Dashboard",
+            "timestamp": timestamp,
+        },
+    ]
+    response = client.post("/track/browser-activity", headers=auth_headers, json=batch_payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 3
+    assert data[0]["url"] == "https://google.com"
+    assert data[1]["url"] == "https://youtube.com"
+    assert data[2]["url"] == "https://github.com"
+
+    # Also test /browser-activity/batch explicit endpoint
+    response_batch = client.post("/track/browser-activity/batch", headers=auth_headers, json=batch_payload)
+    assert response_batch.status_code == 201
+    assert len(response_batch.json()) == 3
+
+
 def test_permissions_flow_and_gating(client: TestClient, auth_headers: dict[str, str]) -> None:
     """Test default permissions, toggling, and enforcement on tracking."""
     # 1. Fetch default permissions

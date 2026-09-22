@@ -28,9 +28,21 @@ class UserResponse(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    """Schema for returning authentication JWT access tokens."""
+    """Schema for returning authentication JWT tokens."""
 
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
 
 
+class RefreshRequest(BaseModel):
+    """Schema for exchanging a refresh token for a new token pair."""
+
+    refresh_token: str = Field(min_length=1)
+
+
+class ChangePasswordRequest(BaseModel):
+    """Schema for changing the password of the logged-in user."""
+
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
