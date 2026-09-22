@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { getMe, loginUser, logoutUser, signupUser } from "../api/auth";
+import { ACCESS_KEY, clearTokens, saveTokens } from "../api/client";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(() => localStorage.getItem("tracker_access_token"));
+  const [token, setToken] = useState(() => localStorage.getItem(ACCESS_KEY));
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -17,9 +18,12 @@ export const AuthProvider = ({ children }) => {
           setUser(userData);
         } catch (err) {
           console.error("Failed to load user info:", err);
-          setToken(null);
-          setUser(null);
-          localStorage.removeItem("tracker_access_token");
+          // Only drop the session if the server rejected it, not on a network error
+          if (err.response?.status === 401) {
+            setToken(null);
+            setUser(null);
+            clearTokens();
+          }
         }
       } else {
         setUser(null);
@@ -32,9 +36,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const res = await loginUser(email, password);
-    const accessToken = res.access_token;
-    localStorage.setItem("tracker_access_token", accessToken);
-    setToken(accessToken);
+    saveTokens(res.access_token, res.refresh_token);
+    setToken(res.access_token);
     const userData = await getMe();
     setUser(userData);
     return userData;
@@ -52,7 +55,7 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       console.warn("Logout API returned error or already expired", e);
     } finally {
-      localStorage.removeItem("tracker_access_token");
+      clearTokens();
       setToken(null);
       setUser(null);
     }

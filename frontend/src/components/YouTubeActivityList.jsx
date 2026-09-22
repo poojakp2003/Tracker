@@ -4,9 +4,11 @@ import { ExternalLink, Play, Search, Video } from "lucide-react";
 export const YouTubeActivityList = ({ items = [], loading = false, totalWatchedFormatted = "0 mins" }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredItems = items.filter((item) =>
-    item.video_title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredItems = items
+    .filter((item) =>
+      item.video_title.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => new Date(b.last_watched) - new Date(a.last_watched));
 
   return (
     <div className="glass-card" style={{ padding: "24px", display: "flex", flexDirection: "column" }}>
@@ -77,102 +79,129 @@ export const YouTubeActivityList = ({ items = [], loading = false, totalWatchedF
         </div>
       </div>
 
-      {/* YouTube List Content */}
+      {/* Table Content */}
       {loading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          <div className="skeleton" style={{ height: "48px" }} />
-          <div className="skeleton" style={{ height: "48px" }} />
-          <div className="skeleton" style={{ height: "48px" }} />
+          <div className="skeleton" style={{ height: "40px" }} />
+          <div className="skeleton" style={{ height: "40px" }} />
+          <div className="skeleton" style={{ height: "40px" }} />
         </div>
       ) : filteredItems.length > 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          {filteredItems.map((yt, idx) => (
+        <div style={{ overflowX: "auto" }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "separate",
+              borderSpacing: "0 6px",
+              fontSize: "0.9rem",
+            }}
+          >
+            <thead>
+              <tr style={{ color: "var(--text-secondary)", textAlign: "left", fontSize: "0.8rem" }}>
+                <th style={{ padding: "8px 12px", fontWeight: 600 }}>Watched Video</th>
+                <th style={{ padding: "8px 12px", fontWeight: 600, width: "140px", textAlign: "right" }}>Sessions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredItems.slice(0, 10).map((yt, idx) => (
+                <tr
+                  key={yt.video_id || idx}
+                  style={{
+                    background: "rgba(255, 255, 255, 0.025)",
+                    borderRadius: "var(--radius-sm)",
+                    transition: "background 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.025)")}
+                >
+                  <td style={{ padding: "10px 12px", borderTopLeftRadius: "8px", borderBottomLeftRadius: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                      <div
+                        style={{
+                          width: "28px",
+                          height: "28px",
+                          borderRadius: "6px",
+                          background: "rgba(244, 63, 94, 0.12)",
+                          color: "#F43F5E",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Play size={14} fill="#F43F5E" />
+                      </div>
+                      <span
+                        style={{
+                          fontWeight: 500,
+                          color: "var(--text-primary)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          maxWidth: "300px",
+                        }}
+                        title={yt.video_title}
+                      >
+                        {yt.video_title}
+                      </span>
+                      <a
+                        href={yt.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", flexShrink: 0 }}
+                        title="Open YouTube video"
+                      >
+                        <ExternalLink size={13} />
+                      </a>
+                    </div>
+                  </td>
+                  <td
+                    style={{
+                      padding: "10px 12px",
+                      textAlign: "right",
+                      borderTopRightRadius: "8px",
+                      borderBottomRightRadius: "8px",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "14px" }}>
+                      <span style={{ color: "var(--text-muted)", fontSize: "0.85rem", minWidth: "18px", textAlign: "center" }}>
+                        {yt.watch_count}
+                      </span>
+                      <span
+                        style={{
+                          color: "#FB7185",
+                          fontWeight: 600,
+                          fontSize: "0.8rem",
+                          fontFamily: "monospace",
+                          letterSpacing: "0.5px",
+                          padding: "4px 10px",
+                          background: "rgba(244, 63, 94, 0.1)",
+                          borderRadius: "var(--radius-sm)",
+                          border: "1px solid rgba(244, 63, 94, 0.2)",
+                          minWidth: "60px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {yt.watched_formatted}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filteredItems.length > 10 && (
             <div
-              key={yt.video_id || idx}
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "12px 16px",
-                background: "rgba(255, 255, 255, 0.025)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "var(--radius-md)",
-                transition: "all 0.2s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
-                e.currentTarget.style.borderColor = "rgba(244, 63, 94, 0.3)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.025)";
-                e.currentTarget.style.borderColor = "var(--border-subtle)";
+                textAlign: "center",
+                paddingTop: "10px",
+                color: "var(--text-muted)",
+                fontSize: "0.8rem",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
-                <div
-                  style={{
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "6px",
-                    background: "rgba(244, 63, 94, 0.12)",
-                    color: "#F43F5E",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <Play size={14} fill="#F43F5E" />
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span
-                      style={{
-                        fontWeight: 600,
-                        fontSize: "0.95rem",
-                        color: "var(--text-primary)",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        maxWidth: "400px",
-                      }}
-                      title={yt.video_title}
-                    >
-                      {yt.video_title}
-                    </span>
-                    <a
-                      href={yt.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: "var(--text-muted)", display: "flex", alignItems: "center" }}
-                      title="Open YouTube video"
-                    >
-                      <ExternalLink size={13} />
-                    </a>
-                  </div>
-                  <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>
-                    {yt.watch_count} {yt.watch_count === 1 ? "session" : "sessions"}
-                  </span>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
-                <span
-                  style={{
-                    color: "#FB7185",
-                    fontWeight: 600,
-                    fontSize: "0.85rem",
-                    padding: "4px 10px",
-                    background: "rgba(244, 63, 94, 0.1)",
-                    borderRadius: "var(--radius-sm)",
-                    border: "1px solid rgba(244, 63, 94, 0.2)",
-                  }}
-                >
-                  {yt.watched_formatted}
-                </span>
-              </div>
+              Showing 10 of {filteredItems.length} watched videos
             </div>
-          ))}
+          )}
         </div>
       ) : (
         <div

@@ -1,4 +1,4 @@
-import apiClient from "./client";
+import apiClient, { clearTokens } from "./client";
 
 export const loginUser = async (email, password) => {
   const response = await apiClient.post("/auth/login", { email, password });
@@ -17,8 +17,9 @@ export const getMe = async () => {
 
 export const logoutUser = async () => {
   try {
-    await apiClient.post("/auth/logout");
+    // skipAuthRefresh: don't try to refresh a token just to log out
+    await apiClient.post("/auth/logout", null, { skipAuthRefresh: true });
   } finally {
-    localStorage.removeItem("tracker_access_token");
+    clearTokens();
   }
 };
